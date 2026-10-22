@@ -62,6 +62,12 @@ export async function getRecent(id: string): Promise<Sample[]> {
   return raw.map((r) => (typeof r === "string" ? JSON.parse(r) : r));
 }
 
+export async function getLatest(id: string): Promise<Sample | null> {
+  const [raw] = await redis.lrange<Sample | string>(`recent:${id}`, 0, 0);
+  if (!raw) return null;
+  return typeof raw === "string" ? JSON.parse(raw) : raw;
+}
+
 export async function getDailyHistory(id: string, now: number): Promise<{ date: string; counts: DayCounts | null }[]> {
   const row = (await redis.hgetall<Record<string, number | string>>(`daily:${id}`)) ?? {};
   return Array.from({ length: HISTORY_DAYS }, (_, i) => {

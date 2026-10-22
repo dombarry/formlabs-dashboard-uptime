@@ -1,8 +1,9 @@
 # Formlabs Dashboard Uptime
 
-Unofficial status page and email alerting for Formlabs Dashboard.
+Unofficial status page and alerting for Formlabs Dashboard.
 
-- `GET /api/check`: runs the health checks, records the results in Redis and sends an email when a check goes down or recovers. Requires `Authorization: Bearer $CRON_SECRET`.
+- `GET /api/check`: runs the health checks, records the results in Redis and sends an alert (email and/or Slack) when a check goes down or recovers. Requires `Authorization: Bearer $CRON_SECRET`.
+- `GET /api/status`: public JSON summary used by the Mac menu bar app, cached at the edge for 60s.
 - `/`: the status page, with 90-day uptime bars, current status, average latency and recent incidents.
 
 ## Checks
@@ -16,7 +17,7 @@ Unofficial status page and email alerting for Formlabs Dashboard.
 
 \* These checks only run when `FORMLABS_CLIENT_ID` and `FORMLABS_CLIENT_SECRET` are set. Create the credentials in Dashboard under Developer Tools. See https://developer.formlabs.com/.
 
-A response slower than 8s counts as **degraded**. A failed request or a timeout after 20s counts as **down**. An alert email goes out after `ALERT_AFTER_FAILURES` consecutive failures (default 2). A recovery email follows when the check passes again.
+A response slower than 8s counts as **degraded**. A failed request or a timeout after 20s counts as **down**. An alert email goes out after `ALERT_AFTER_FAILURES` consecutive failures (default 2). A recovery alert follows when the check passes again. Alerts go to email and/or Slack; see [NOTIF_SETUP.md](NOTIF_SETUP.md) for setting up Slack, Google Groups and the Mac menu bar app (`macos/`).
 
 ## Setup
 

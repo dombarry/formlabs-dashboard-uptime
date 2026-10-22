@@ -1,0 +1,16 @@
+# Backup scheduler. GitHub's cron is best-effort (often runs late), so prefer cron-job.org
+# as the primary; this keeps checks going if that ever stops.
+name: uptime-check
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS -m 90 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "${{ secrets.STATUS_PAGE_URL }}/api/check"

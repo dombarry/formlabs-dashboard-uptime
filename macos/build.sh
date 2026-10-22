@@ -46,4 +46,12 @@ PLIST
 codesign --force --deep --sign "${SIGN_IDENTITY:--}" "$APP"
 
 ditto -c -k --keepParent "$APP" "dist/DashboardStatus.zip"
-echo "Built $APP and dist/DashboardStatus.zip (status URL: $STATUS_PAGE_URL)"
+
+# Publish the zip on the status site's /mac page
+DOWNLOADS=../public/downloads
+mkdir -p "$DOWNLOADS"
+cp dist/DashboardStatus.zip "$DOWNLOADS/DashboardStatus.zip"
+cat > "$DOWNLOADS/mac-app.json" <<JSON
+{ "version": "$VERSION", "builtAt": "$(date -u +%Y-%m-%d)", "bytes": $(stat -f%z dist/DashboardStatus.zip) }
+JSON
+echo "Built $APP and dist/DashboardStatus.zip (status URL: $STATUS_PAGE_URL), copied to public/downloads"

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CHECKS, type CheckStatus } from "@/lib/checks";
 import {
   HISTORY_DAYS,
@@ -88,9 +89,14 @@ export default async function Page() {
 
   return (
     <main>
-      <header>
-        <h1>Formlabs Dashboard Status</h1>
-        <p className="muted">Unofficial monitor for dashboard.formlabs.com and the APIs behind it</p>
+      <header className="page-head">
+        <div>
+          <h1>Formlabs Dashboard Status</h1>
+          <p className="muted">Unofficial monitor for dashboard.formlabs.com and the APIs behind it</p>
+        </div>
+        <Link className="btn secondary" href="/mac">
+          Get the Mac menu bar app
+        </Link>
       </header>
 
       <section className={`banner ${overall}`}>

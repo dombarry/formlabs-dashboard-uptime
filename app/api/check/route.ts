@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { CHECKS } from "@/lib/checks";
 import { sendAlert, type Transition } from "@/lib/alert";
-import { closeIncident, getState, openIncident, recordResults, setState } from "@/lib/store";
+import { closeIncident, getIncidents, getState, openIncident, recordResults, setState, setSummary } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -42,6 +42,20 @@ export async function GET(req: Request) {
       if (state.failStreak || state.alerting) await setState(check.id, { failStreak: 0, alerting: false });
     }
   }
+
+  // Precomputed so /api/status (polled by every menu bar app) costs a single Redis read
+  const incidents = await getIncidents();
+  await setSummary({
+    lastRun: now,
+    checks: CHECKS.map((c, i) => ({
+      id: c.id,
+      name: c.name,
+      status: results[i].status,
+      ms: results[i].ms,
+      error: results[i].error ?? null,
+    })),
+    openIncidents: incidents.filter((i) => !i.end).map((i) => ({ check: i.check, start: i.start, error: i.error ?? null })),
+  });
 
   await sendAlert(transitions, now);
 

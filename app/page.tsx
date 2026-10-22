@@ -1,13 +1,7 @@
 import Link from "next/link";
 import { CHECKS, type CheckStatus } from "@/lib/checks";
-import {
-  HISTORY_DAYS,
-  getDailyHistory,
-  getIncidents,
-  getLastRun,
-  getRecent,
-  type DayCounts,
-} from "@/lib/store";
+import { HISTORY_DAYS, getDailyHistory, getIncidents, getSummary } from "@/lib/store";
+import DayBars from "./DayBars";
 
 export const dynamic = "force-dynamic";
 
@@ -17,14 +11,6 @@ const STATUS_LABEL: Record<CheckStatus | "unknown", string> = {
   down: "Down",
   unknown: "No data",
 };
-
-function dayClass(c: DayCounts | null) {
-  if (!c) return "none";
-  const total = c.up + c.degraded + c.down;
-  if (!total) return "none";
-  if (c.down === 0) return c.degraded === 0 ? "up" : "degraded";
-  return c.down / total < 0.05 ? "partial" : "down";
-}
 
 const pct = (n: number) => (n >= 99.995 ? "100" : n.toFixed(2));
 
@@ -44,12 +30,12 @@ const fmtDuration = (ms: number) => {
 
 export default async function Page() {
   const now = Date.now();
-  const [lastRun, incidents, checks] = await Promise.all([
-    getLastRun(),
+  const [summary, incidents, checks] = await Promise.all([
+    getSummary(),
     getIncidents(),
     Promise.all(
       CHECKS.map(async (c) => {
-        const [days, recent] = await Promise.all([getDailyHistory(c.id, now), getRecent(c.id)]);
+        const days = await getDailyHistory(c.id, now);
         const totals = days.reduce(
           (a, d) => {
             if (!d.counts) return a;
@@ -57,21 +43,21 @@ export default async function Page() {
           },
           { ok: 0, all: 0 },
         );
-        const latest = recent[0];
-        const okRecent = recent.filter((s) => s.s !== "down");
-        const avgMs = okRecent.length ? Math.round(okRecent.reduce((a, s) => a + s.ms, 0) / okRecent.length) : null;
+        const today = days[days.length - 1].counts;
+        const okToday = today ? today.up + today.degraded : 0;
         return {
           ...c,
           days,
-          latest,
-          avgMs,
+          avgMs: today && okToday ? Math.round(today.msSum / okToday) : null,
           uptime: totals.all ? (totals.ok / totals.all) * 100 : null,
         };
       }),
     ),
   ]);
 
-  const statuses = checks.map((c) => c.latest?.s);
+  const lastRun = summary?.lastRun ?? null;
+  const latest = new Map(summary?.checks.map((c) => [c.id, c]));
+  const statuses = checks.map((c) => latest.get(c.id)?.status);
   const overall: CheckStatus | "unknown" = !lastRun
     ? "unknown"
     : statuses.includes("down")
@@ -108,7 +94,8 @@ export default async function Page() {
 
       <section className="card">
         {checks.map((c) => {
-          const status = c.latest?.s ?? "unknown";
+          const current = latest.get(c.id);
+          const status = current?.status ?? "unknown";
           return (
             <div className="check" key={c.id}>
               <div className="check-head">
@@ -118,24 +105,16 @@ export default async function Page() {
                 </div>
                 <div className={`pill ${status}`}>{STATUS_LABEL[status]}</div>
               </div>
-              <div className="bars" aria-label={`${HISTORY_DAYS} day history`}>
-                {c.days.map((d) => {
-                  const total = d.counts ? d.counts.up + d.counts.degraded + d.counts.down : 0;
-                  const tip = total
-                    ? `${d.date}: ${pct(((total - d.counts!.down) / total) * 100)}% up (${d.counts!.down} failed of ${total} checks)`
-                    : `${d.date}: no data`;
-                  return <span key={d.date} className={`bar ${dayClass(d.counts)}`} title={tip} />;
-                })}
-              </div>
+              <DayBars checkId={c.id} days={c.days} />
               <div className="check-foot muted small">
                 <span>{HISTORY_DAYS} days ago</span>
                 <span>
                   {c.uptime !== null ? `${pct(c.uptime)}% uptime` : "—"}
-                  {c.avgMs !== null && ` · ${c.avgMs} ms avg (24h)`}
+                  {c.avgMs !== null && ` · ${c.avgMs} ms avg today`}
                 </span>
                 <span>Today</span>
               </div>
-              {c.latest?.e && status === "down" && <div className="err small">{c.latest.e}</div>}
+              {current?.error && status === "down" && <div className="err small">{current.error}</div>}
             </div>
           );
         })}

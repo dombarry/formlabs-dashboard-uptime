@@ -106,3 +106,29 @@ pre { background: var(--card); border: 1px solid var(--border); border-radius: 6
 .steps ul li { margin-bottom: 6px; }
 .faq dt { font-weight: 600; margin-top: 16px; }
 .faq dd { margin: 4px 0 0; color: var(--muted); }
+
+/* Day bars with hover details */
+.bars-wrap { position: relative; }
+button.bar { border: 0; padding: 0; cursor: pointer; font: inherit; }
+.bar.active { outline: 2px solid var(--text); outline-offset: 1px; }
+.popover {
+  position: absolute; bottom: calc(100% + 8px); z-index: 10;
+  width: max-content; max-width: min(340px, calc(100vw - 32px));
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); padding: 12px 14px; font-size: 13px;
+  pointer-events: none;
+}
+.popover.center { transform: translateX(-50%); }
+.popover.left { transform: translateX(-12px); }
+.popover.right { transform: translateX(calc(-100% + 12px)); }
+.pop-head { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 6px; }
+.pop-summary { display: flex; gap: 12px; font-weight: 600; margin-bottom: 4px; }
+.pop-section { margin-top: 8px; }
+.pop-foot { margin-top: 8px; font-size: 12px; }
+.windows { list-style: none; margin: 0; padding: 0; }
+.windows li { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; }
+.windows .dot { width: 8px; height: 8px; }
+.mono { font-family: ui-monospace, monospace; font-size: 12px; }
+.ok, .up-text { color: var(--up); }
+.down-text { color: var(--down); }
+.degraded-text { color: var(--degraded); }

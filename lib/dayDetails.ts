@@ -1,4 +1,5 @@
 import type { CheckStatus } from "./checks";
+import { percentile } from "./percentile";
 import type { Incident, Sample } from "./store";
 
 export type ProblemWindow = {
@@ -25,8 +26,6 @@ export type DayDetails = {
 
 const DEFAULT_INTERVAL_MS = 5 * 60_000;
 
-const percentile = (sorted: number[], p: number) => sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * p))];
-
 function mostCommon(values: string[]) {
   const counts = new Map<string, number>();
   for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
@@ -44,8 +43,8 @@ export function summarizeDay(
   const sorted = [...samples].sort((a, b) => a.t - b.t);
 
   // Typical spacing between checks, used to close a window that runs to the end of the day
-  const gaps = sorted.slice(1).map((s, i) => s.t - sorted[i].t).sort((a, b) => a - b);
-  const interval = gaps.length ? percentile(gaps, 0.5) : DEFAULT_INTERVAL_MS;
+  const gaps = sorted.slice(1).map((s, i) => s.t - sorted[i].t);
+  const interval = percentile(gaps, 0.5) ?? DEFAULT_INTERVAL_MS;
 
   // Group consecutive non-up samples of the same kind into windows; a window ends at the next sample that differs
   const windows: ProblemWindow[] = [];
@@ -82,7 +81,7 @@ export function summarizeDay(
     degradedMinutes: minutes("degraded"),
     windows,
     errors: mostCommon(sorted.flatMap((s) => (s.e ? [s.e] : []))),
-    latency: okMs.length ? { p50: percentile(okMs, 0.5), p95: percentile(okMs, 0.95), max: okMs[okMs.length - 1] } : null,
+    latency: okMs.length ? { p50: percentile(okMs, 0.5)!, p95: percentile(okMs, 0.95)!, max: okMs[okMs.length - 1] } : null,
     incidents: incidents.filter((i) => i.start < dayEnd && (i.end ?? Infinity) > dayStart),
   };
 }

@@ -18,7 +18,7 @@ export type CheckDef = {
 };
 
 const API = "https://api.formlabs.com";
-const TIMEOUT_MS = 20_000;
+export const TIMEOUT_MS = 20_000;
 // Slower than this counts as degraded rather than up
 const SLOW_MS = 8_000;
 

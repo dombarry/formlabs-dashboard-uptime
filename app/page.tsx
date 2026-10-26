@@ -1,9 +1,14 @@
 import Link from "next/link";
 import { CHECKS, type CheckStatus } from "@/lib/checks";
-import { HISTORY_DAYS, getDailyHistory, getIncidents, getSummary } from "@/lib/store";
+import { latencyLabels, type LatencyLabels } from "@/lib/latency";
+import { getLatencyWindow } from "@/lib/latencyWindow";
+import { HISTORY_DAYS, getDailyHistory, getSummary } from "@/lib/store";
 import DayBars from "./DayBars";
 
 export const dynamic = "force-dynamic";
+
+// The only check with P95/P99 shown; requested for tracking database performance work
+const LATENCY_CHECK = "api-printers";
 
 const STATUS_LABEL: Record<CheckStatus | "unknown", string> = {
   up: "Operational",
@@ -23,16 +28,12 @@ const fmtTime = (t: number) =>
     minute: "2-digit",
   });
 
-const fmtDuration = (ms: number) => {
-  const m = Math.max(1, Math.round(ms / 60_000));
-  return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
-};
-
 export default async function Page() {
   const now = Date.now();
-  const [summary, incidents, checks] = await Promise.all([
+  const hasLatencyCheck = CHECKS.some((c) => c.id === LATENCY_CHECK);
+  const [summary, latencyWindow, checks] = await Promise.all([
     getSummary(),
-    getIncidents(),
+    hasLatencyCheck ? getLatencyWindow(LATENCY_CHECK) : null,
     Promise.all(
       CHECKS.map(async (c) => {
         const days = await getDailyHistory(c.id, now);
@@ -78,7 +79,10 @@ export default async function Page() {
       <header className="page-head">
         <div>
           <h1>Formlabs Dashboard Status</h1>
-          <p className="muted">Unofficial monitor for dashboard.formlabs.com and the APIs behind it</p>
+          <p className="muted">
+            Unofficial monitor for Formlabs Dashboard. Checks run every 5 minutes; printers-endpoint response times
+            show P95 and P99.
+          </p>
         </div>
         <Link className="btn secondary" href="/mac">
           Get the Mac menu bar app
@@ -115,37 +119,46 @@ export default async function Page() {
                 <span>Today</span>
               </div>
               {current?.error && status === "down" && <div className="err small">{current.error}</div>}
+              {c.id === LATENCY_CHECK && latencyWindow && <LatencyBlock labels={latencyLabels(latencyWindow)} />}
             </div>
           );
         })}
       </section>
 
-      <section>
-        <h2>Recent incidents</h2>
-        {incidents.length === 0 ? (
-          <p className="muted">No incidents recorded.</p>
-        ) : (
-          <ul className="incidents">
-            {incidents.map((i) => {
-              const check = CHECKS.find((c) => c.id === i.check);
-              return (
-                <li key={`${i.check}-${i.start}`}>
-                  <span className={`dot ${i.end ? "up" : "down"}`} />
-                  <div>
-                    <strong>{check?.name ?? i.check}</strong>{" "}
-                    <span className="muted">
-                      {i.end ? `resolved after ${fmtDuration(i.end - i.start)}` : `ongoing for ${fmtDuration(now - i.start)}`}
-                    </span>
-                    <div className="muted small">
-                      Started {fmtTime(i.start)} ET{i.error ? ` · ${i.error}` : ""}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+      <section className="how">
+        <h2>How this is measured</h2>
+        <ul className="muted small">
+          <li>
+            Every 5 minutes, one request is sent to each endpoint above, including the printers endpoint (
+            <code>api.formlabs.com/developer/v1/printers/</code>), from a single Vercel server in US-East.
+          </li>
+          <li>
+            P95: 95% of checks finished faster than this. P99: 99% did. Both cover the same rolling 7 days, and checks
+            that time out (or fail) count as 20 s.
+          </li>
+          <li>
+            Alerts fire after 2 failed checks in a row (an error or a 20 s timeout). Slow responses alone never trigger
+            an alert.
+          </li>
+          <li>Short spikes that happen between checks can be missed.</li>
+        </ul>
       </section>
     </main>
+  );
+}
+
+function LatencyBlock({ labels }: { labels: LatencyLabels }) {
+  return (
+    <div className="latency small">
+      <div className="muted">{labels.heading}</div>
+      <div className="latency-row">
+        <span>{labels.p95}</span>
+        <span className="muted">P95</span>
+      </div>
+      <div className="latency-row">
+        <span>{labels.p99}</span>
+        <span className="muted">P99</span>
+      </div>
+    </div>
   );
 }

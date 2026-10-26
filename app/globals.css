@@ -4,11 +4,17 @@
   --text: #18181b;
   --muted: #71717a;
   --border: #e4e4e7;
-  --up: #16a34a;
-  --degraded: #eab308;
-  --partial: #f97316;
-  --down: #dc2626;
+  /* Blue / yellow / orange / dark crimson: told apart by lightness as well as hue, so they stay distinct
+     with red-green colour blindness (green and red were the hardest pair to separate) */
+  --up: #1f77d0;
+  --degraded: #f7d038;
+  --partial: #c45a00;
+  --down: #6b1030;
   --none: #d4d4d8;
+  /* Yellow is unreadable as text on white, so status text gets its own darker shades */
+  --up-text: var(--up);
+  --degraded-text: #8a6a00;
+  --down-text: var(--down);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +25,11 @@
     --muted: #a1a1aa;
     --border: #2a2a2e;
     --none: #3f3f46;
+    --up: #3d8fe0;
+    --partial: #d9700a;
+    --down: #c2265a;
+    --degraded-text: var(--degraded);
+    --down-text: #ec6f95;
   }
 }
 
@@ -37,7 +48,7 @@ h2 { font-size: 18px; margin: 40px 0 12px; }
 .muted { color: var(--muted); }
 .small { font-size: 13px; }
 .warn { color: var(--partial); }
-.err { color: var(--down); margin-top: 6px; font-family: ui-monospace, monospace; }
+.err { color: var(--down-text); margin-top: 6px; font-family: ui-monospace, monospace; }
 
 .banner {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -57,9 +68,9 @@ h2 { font-size: 18px; margin: 40px 0 12px; }
 .name { font-weight: 600; }
 
 .pill { font-size: 13px; font-weight: 600; white-space: nowrap; }
-.pill.up { color: var(--up); }
-.pill.degraded { color: var(--degraded); }
-.pill.down { color: var(--down); }
+.pill.up { color: var(--up-text); }
+.pill.degraded { color: var(--degraded-text); }
+.pill.down { color: var(--down-text); }
 .pill.unknown { color: var(--muted); }
 
 .bars { display: flex; gap: 2px; height: 34px; }
@@ -131,6 +142,6 @@ button.bar { border: 0; padding: 0; cursor: pointer; font: inherit; }
 .windows li { display: flex; gap: 8px; align-items: baseline; padding: 2px 0; }
 .windows .dot { width: 8px; height: 8px; }
 .mono { font-family: ui-monospace, monospace; font-size: 12px; }
-.ok, .up-text { color: var(--up); }
-.down-text { color: var(--down); }
-.degraded-text { color: var(--degraded); }
+.ok, .up-text { color: var(--up-text); }
+.down-text { color: var(--down-text); }
+.degraded-text { color: var(--degraded-text); }
